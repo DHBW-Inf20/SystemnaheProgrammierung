@@ -1,4 +1,9 @@
+# exclude everything (for executables without a file extension)
 *
+
+# reinclude everything with a file extension
 !*/
-!*.s
-!.gitignore
+!*.*
+
+# but exclude object files
+*.o
