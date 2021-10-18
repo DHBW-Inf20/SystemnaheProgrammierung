@@ -5,7 +5,7 @@
  * as -g -o u02_09.o u02_09.s
  * ld -o u02_09 u02_09.o
  */
- 
+
 .global _start
 _start:
 	/* 1c) */

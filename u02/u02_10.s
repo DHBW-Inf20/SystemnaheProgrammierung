@@ -5,7 +5,7 @@
  * as -g -o u02_10.o u02_10.s
  * ld -o u02_10 u02_10.o
  */
- 
+
 .global _start
 _start:
 	mov	r1, #140

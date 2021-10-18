@@ -54,7 +54,7 @@ divide_loop:
 	b	divide_loop
 
 move_results_before_exit:
-	mov	r0, r4	
+	mov	r0, r4
 	mov	r1, r3
 
 _exit:

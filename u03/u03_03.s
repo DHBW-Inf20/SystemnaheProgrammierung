@@ -5,7 +5,7 @@
  * as -g -o u03_03.o u03_03.s
  * ld -o u03_03 u03_03.o
  */
- 
+
 .global _start
 _start:
 	/* 1h) */
@@ -68,7 +68,7 @@ divide_loop:
 	b	divide_loop
 
 move_results_before_exit:
-	mov	r0, r4	
+	mov	r0, r4
 	mov	r1, r3
 
 div_r0_by_r1_exit:

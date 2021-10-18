@@ -5,7 +5,7 @@
  * as -g -o u03_01.o u03_01.s
  * ld -o u03_01 u03_01.o
  */
- 
+
 .global _start
 _start:
 	/* 1e) */
