@@ -20,7 +20,7 @@ _start:
 	sub	r0, r1, r2
 	/*
 	 * r0 will be 0xffffff91 = 11111111 11111111 11111111 10010001
-	 * here, which interpreted as two's complement is -111
+	 * here, which interpreted as two's complement is -111 (decimal)
 	 */
 
 _exit:

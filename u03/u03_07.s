@@ -11,7 +11,7 @@ main:
 	bl	printf			@ libc call
 
 	/*
-	 * push/pop use a full ascending stack
+	 * push/pop use a full descending stack
 	 * -> to let scanf correctly write to stack decrement sp first
 	 */
 	sub	sp, sp, #4		@ decrement sp for scanf

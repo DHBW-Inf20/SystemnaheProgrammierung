@@ -24,7 +24,7 @@ _exit:
 	 * Linux kernel interprets this as a system call and takes the
 	 * system call number from r7
 	 *
-	 * r0 - r6 are used as arguments 1 -7 to the system call
+	 * r0-r6 are used as arguments 1-7 to the system call
 	 * -> exit takes 8 least significant bits of r0 (see exit(2))
 	 *
 	 * see syscall(2)
