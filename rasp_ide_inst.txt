@@ -1,0 +1,52 @@
+/* update the latest packages and repositories
+sudo apt update -y
+
+cd ~
+git clone https://github.com/ve3wwg/stm32f103c8t6.git
+mv stm32f103c8t6/ stm32
+
+cd stm32
+git clone https://github.com/libopencm3/libopencm3.git
+
+/* FreeRTOS herunterladen
+/* http://www.freertos.org/
+/* Download FreeRTOS --> Download FreeRTOS
+cd rtos
+unzip ~/Downloads/FreeRTOSv10.4.1.zip
+
+nano Project.mk 
+/* FREERTOS        ?= FreeRTOSv10.0.1		alt
+/* FREERTOS        ?= FreeRTOSv10.4.1		neu
+
+/* Installation des Cross-Compilers
+sudo apt-get install -y gcc-arm-none-eabi
+arm-none-eabi-gcc --version
+arm-none-eabi-as --version
+
+nano ~/stm32/Makefile.incl
+/* PREFIX          ?= arm-none-eabi	(Zeichenkette voe -gcc und -as)
+
+/* libusb updaten
+/* https://packages.debian.org/jessie/armhf/libusb-1.0-0-dev/download
+/* --> ftp.de.debian.org/debian
+dpkg -I ~/Downloads/libusb-1.0-0-dev_1.0.19-1_armhf.deb
+
+/* Build IDE
+cd ~/stm32
+make
+
+/* stlink Tools von STM installieren
+cd ~
+sudo apt install cmake
+sudo apt install stlink-tools
+
+/* openocd Flasher und Debug-Server installieren 
+sudo apt-get install git autoconf libtool make pkg-config libusb-1.0-0 libusb-1.0-0-dev
+cd ~/Downloads
+git clone http://openocd.zylin.com/openocd
+cd openocd
+./bootstrap
+./configure --enable-sysfsgpio --enable-bcm2835gpio
+make
+sudo make install
+
