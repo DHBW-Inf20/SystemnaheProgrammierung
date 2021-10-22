@@ -1,12 +1,12 @@
 /*
- * u04_04.s
+ * u04_04_aus.s
  *
  * assemble and link with:
- * as -g -o led_d7_an.o u04_04.s
- * ld -o led_d7_an.elf led_d7_an.o -T ../lib/stm32f1.ld
+ * as -g -o led_d7_aus.o u04_04_aus.s
+ * ld -o led_d7_aus.elf led_d7_aus.o -T ../lib/stm32f1.ld
  *
  * start with:
- * openocd -f interface/stlink-v2-1.cfg -f target/stm32f1x.cfg -c "program led_d7_an.elf verify reset exit"
+ * openocd -f interface/stlink-v2-1.cfg -f target/stm32f1x.cfg -c "program led_d7_aus.elf verify reset exit"
  */
 
 .syntax unified
@@ -53,8 +53,8 @@ _start:
 	 */
 	ldr	r1, =0x40010810		@ load address
 	mov	r2, #1
-	mov	r0, r2, lsl #8		@ set bit 8 (BS8) to 1
-	str	r0, [r1]		@ -> Pin 8 set
+	mov	r0, r2, lsl #24		@ set bit 8 (BR8) to 1
+	str	r0, [r1]		@ -> Pin 8 reset
 
 loop:
 	b	loop
