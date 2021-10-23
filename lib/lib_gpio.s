@@ -9,44 +9,52 @@
 .cpu cortex-m3
 .thumb
 
-.word 0x20000400
-.word 0x080000ed
-.space 0xe4
-
-/***********************************************************************/
-/* library:       lib_gpio.s                                           */
-/* description:   TODO Provides mathematical functions                      */
-/*                function mult_r0_by_r1: multiplies two numbers       */
-/*                function div_r0_by_r1: divides one number by another */
-/* depends on:    -                                                    */
-/***********************************************************************/
+/************************************************************************/
+/* library:       lib_gpio.s                                            */
+/* description:   Provides functions for handling GPIO of NUCLEO-F103RB */
+/*                function port_open: enables IO port clock             */
+/*                function gpio_init: configures pin                    */
+/*                function gpio_set: sets output of pin                 */
+/* depends on:    -                                                     */
+/************************************************************************/
 
 .global port_open
 port_open:
-	/********************************************************************************/
-	/* function:    mult_r0_by_r1                                                   */
-	/* description: multiplies the values in r0 and r1 and returns the result in r0 */
-	/********************************************************************************/
-	/* input:  r0: multiplier (how many times to add)                               */
-	/*         r1: multiplicand (what to add)                                       */
-	/* output: r0: product of multiplicand and multiplier                           */
-	/* helper: r2 (no need to save, is saved on the stack in this function)         */
-	/********************************************************************************/
+	/**************************************************************/
+	/* function:    port_open                                     */
+	/* description: enables the clock for the specified IO port   */
+	/**************************************************************/
+	/* input:  r0: port (A: 0, B: 1, ...), must be >= 0 and <= 4  */
+	/*             otherwise this function has no effect          */
+	/* output: r0: preserves input                                */
+	/**************************************************************/
+	/* check parameter */
+	push	{lr}
+	bl	check_port		@ failed check will return early
+	pop	{lr}
+
+	/* begin function */
 	push	{r1-r3}
+
 	/*
 	 * configure APB2 peripheral clock enable register (RCC_APB2ENR)
-	 *
-	 * base RCC address: 0x40021000
+	 */
+
+	/*
+	 * base reset and clock control RCC address: 0x40021000
 	 * RCC_APB2ENR offset: 0x18
 	 * -> 0x40021018
 	 */
-	ldr	r1, =0x40021018		@ base address
-	ldr	r2, [r1]
-	mov	r3, #0b100
-	lsl	r3, r3, r0
-	orr	r2, r2, r3
-	str	r2, [r1]
+	ldr	r1, =0x40021018		@ RCC_APB2ENR address
+	ldr	r2, [r1]		@ load previous register value
 
+	mov	r3, #0b100		@ bitmask, ports start at bit 2
+	lsl	r3, r0			@ shift mask by port number
+	orr	r2, r3			@ enable clock for port
+
+	str	r2, [r1]		@ store new register value
+
+	/* end function and return */
 	pop	{r1-r3}
 	bx	lr
 
@@ -54,101 +62,190 @@ port_open:
 
 .global gpio_init
 gpio_init:
-	push	{r3-r5}
+	/***************************************************************************/
+	/* function:    gpio_init                                                  */
+	/* description: configures the specified GPIO pin as an input/output pin   */
+	/***************************************************************************/
+	/* input:  r0: port the pin belongs to (A: 0, B: 1, ...),                  */
+	/*             must be >= 0 and <= 4 otherwise this function has no effect */
+	/*         r1: pin, must be >= 0 and <= 15                                 */
+	/*             otherwise this function has no effect                       */
+	/*         r2: mode, 0 for floating input, anything else for general       */
+	/*             purpose output push-pull, max speed 50 MHz                  */
+	/* output: r0: preserves input                                             */
+	/*         r1: preserves input                                             */
+	/*         r2: preserves input                                             */
+	/***************************************************************************/
+	/* check parameters */
+	push	{lr}
+	bl	check_port
+	bl	check_pin		@ failed check will return early
+	pop	{lr}
 
-	/* Port offset -> Ports are 0x400 apart */
-	mov	r3, #0x400
-	mul	r4, r0, r3		@ r0 is Port number (A = 0, ...)
+	/* begin function */
+	push	{r0-r5}
+
 	/*
-	 * configure Port configuration register low/high (GPIOx_CRL/GPIOx_CRH)
-	 *
-	 * base GPIO Port A address: 0x40010800
-	 * -> add Port offset in r4 and optional high offset
+	 * configure port configuration register low/high
+	 * (GPIOx_CRL/GPIOx_CRH)
 	 */
-	ldr	r3, =0x40010800		@ base address
-	add	r3, r3, r4
-	/* if Pin number > 8 high else low */
-	cmp	r1, #8
-	blt	skip_high
-	add	r3, r3, #0x04		@ extra high offset
-skip_high:
-	/* final GPIOx_CRL/GPIOx_CRH address is in r3 */
 
 	/*
-	 * low/high is set (stored in r3)
-	 * -> only care about last 3 bits of Pin number
-	 * -> multiply by 4, use as shift distance
+	 * base GPIO port A address: 0x40010800
+	 * -> add port offset and optional GPIOx_CRH offset (0x04)
 	 */
-	and	r1, r1, #0b111
-	mov	r5, #4
-	mul	r1, r1, r5
+	ldr	r3, =0x40010800		@ base GPIO port A address
 
-	ldr	r4, [r3]		@ load previous register value
+	mov	r4, #0x400		@ ports are 0x400 bytes apart
+	mul	r4, r0			@ times port number -> offset
+	add	r3, r4			@ add port offset to base
 
-	mvn	r0, #0b1111		@ invert mask
+	cmp	r1, #8			@ pin >= 8 -> high else low
+	it	ge			@ if high
+	addge	r3, #0x04		@   add GPIOx_CRH offset to base
+	/* final GPIOx_CRL/GPIOx_CRH address is now in r3 */
+
+	/*
+	 * we now know whether we have a low or high pin (address in r3)
+	 * -> only care about last 3 bits of pin number from here on
+	 *    (low and high configuration registers both have
+	 *    configurations for 8 = 2^3 pins)
+	 * -> multiply by 4 to use as shift distance later
+	 *    (each pin has 4 configuration bits)
+	 */
+	and	r1, #0b111		@ only keep 3 bits
+	mov	r0, #4
+	mul	r1, r0			@ times 4 for use in shifts
+
+	/* load previous register value */
+	ldr	r4, [r3]
+
+	/*
+	 * reset previous CNF and MODE for pin by using a bitmask with
+	 * 4 unset bits rotated into position using ror with adjusted
+	 * shift distance to simulate left rotation
+	 * left shift distance is r1
+	 */
+	mvn	r0, #0b1111		@ all bits set except last 4
 	mov	r5, #32
-	sub	r5, r5, r1		@ 32 - bits to rotate left
-	ror	r0, r0, r5		@ to make left rotate with ror
+	sub	r5, r1			@ 32 - bits to rotate left
+	ror	r0, r5			@ -> left rotation with ror
+	and	r4, r0			@ reset CNF and MODE for pin
 
-	and	r4, r4, r0		@ reset CNF and MODE for Pin
+	/*
+	 * set new CNF and MODE for pin based on function parameter r2
+	 *                     r2                      | CNF | MODE
+	 * input -> floating input                     |  01 |  00
+	 * output -> general purpose output push-pull, |  00 |  11
+	 *           max speed 50 MHz                  |     |
+	 */
+	cmp	r2, #0			@ 0 -> input else output
+	ite	eq			@ if input
+	moveq	r0, #0b0100		@   input configuration
+	movne	r0, #0b0011		@ else output configuration
+	lsl	r0, r1			@ shift CNF and MODE to position
+	orr	r4, r0			@ set new CNF and MODE for pin
 
-	cmp	r2, #0			@ 0 = input, 1 = output
-input:
-	bne	output
-	mov	r0, #0b0100
-	b	change_cnf_and_mode
-output:
-	mov	r0, #0b0001
+	/* store new register value */
+	str	r4, [r3]
 
-change_cnf_and_mode:
-	lsl	r0, r0, r1		@ shift CNF and MODE to position
-	orr	r4, r4, r0
-
-	str	r4, [r3]		@ store new register value
-
-	pop	{r3-r5}
+	/* end function and return */
+	pop	{r0-r5}
 	bx	lr
 
 
 
 .global gpio_set
 gpio_set:
-	push	{r3-r5}
+	/***************************************************************************/
+	/* function:    gpio_set                                                   */
+	/* description: sets the output value of the specified GPIO pin            */
+	/***************************************************************************/
+	/* input:  r0: port the pin belongs to (A: 0, B: 1, ...),                  */
+	/*             must be >= 0 and <= 4 otherwise this function has no effect */
+	/*         r1: pin, must be >= 0 and <= 15                                 */
+	/*             otherwise this function has no effect                       */
+	/*         r2: value, 0 to reset, anything else to set                     */
+	/* output: r0: preserves input                                             */
+	/*         r1: preserves input                                             */
+	/*         r2: preserves input                                             */
+	/***************************************************************************/
+	/* check parameters */
+	push	{lr}
+	bl	check_port
+	bl	check_pin		@ failed check will return early
+	pop	{lr}
 
-	/* Port offset -> Ports are 0x400 apart */
-	mov	r3, #0x400
-	mul	r4, r0, r3		@ r0 is Port number (A = 0, ...)
+	/* begin function */
+	push	{r0-r2}
+
 	/*
-	 * change Port bit set/reset register (GPIOx_BSRR)
-	 *
-	 * base GPIO Port A address: 0x40010800
+	 * update pin output value using port bit set/reset register
+	 * (GPIOx_BSRR)
+	 */
+
+	/*
+	 * adjust pin number by 16 if pin should be reset
+	 * (reset bits in GPIOx_BSRR have an offset of 16)
+	 */
+	cmp	r2, #0			@ 0 -> reset else set
+	it	eq			@ if reset
+	addeq	r1, #16			@   add 16 to pin number
+
+	/* port offset */
+	mov	r2, #0x400		@ ports are 0x400 bytes apart
+	mul	r0, r2			@ times port number -> offset
+
+	/*
+	 * base GPIO port A address: 0x40010800
 	 * GPIOx_BSRR offset: 0x10
 	 * -> 0x40010810
-	 * -> add Port offset in r4
+	 * -> add port offset
 	 */
-	ldr	r3, =0x40010810		@ base address
-	add	r3, r3, r4
-	/* final GPIOx_BSRR address is in r3 */
+	ldr	r2, =0x40010810		@ base adjusted address
+	add	r2, r0			@ add port offset to base
+	/* final GPIOx_BSRR address is now in r3 */
 
-	ldr	r4, [r3]		@ load previous register value
-
-	mvn	r0, 0x10001		@ invert mask
-	mov	r5, #32
-	sub	r5, r5, r1		@ 32 - bits to rotate left
-	ror	r0, r0, r5		@ to make left rotate with ror
-
-	and	r4, r4, r0		@ set and reset bit to 0 for Pin
-
+	/*
+	 * write to BSx/BRx, no need to save previous values,
+	 * GPIOx_BSRR is a write-only register
+	 */
 	mov	r0, #1
-	mov	r0, r0, lsl r1		@ shift to Pin number
-	cmp	r2, #0			@ 0 = reset, 1 = set
-	bne	change_set_or_reset	@ no extra shift for set
-	lsl	r0, r0, #16		@ extra 16 bit shift for reset
+	lsl	r0, r1			@ shift by adjusted pin number
+	str	r0, [r2]		@ set/reset pin
 
-change_set_or_reset:
-	orr	r4, r4, r0
-
-	str	r4, [r3]		@ store new register value
-
-	pop	{r3-r5}
+	/* end function and return */
+	pop	{r0-r2}
 	bx	lr
+
+
+
+check_port:
+	/* port has to be in range 0-4 (A-E) */
+
+	cmp	r0, #0		@ port less than 0?
+	itt	lt		@ |
+	poplt	{lr}		@ v
+	bxlt	lr		@ return early from caller
+
+	cmp	r0, #4		@ port greater than 4?
+	itt	gt		@ |
+	popgt	{lr}		@ v
+	bxgt	lr		@ return early from caller
+
+	bx	lr		@ ok
+
+check_pin:
+	/* pin has to be in range 0-15 */
+
+	cmp	r1, #0		@ pin less than 0?
+	itt	lt		@ |
+	poplt	{lr}		@ v
+	bxlt	lr		@ return early from caller
+
+	cmp	r1, #15		@ pin greater than 15?
+	itt	gt		@ |
+	popgt	{lr}		@ v
+	bxgt	lr		@ return early from caller
+
+	bx	lr		@ ok

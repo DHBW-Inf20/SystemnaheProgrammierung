@@ -1,8 +1,8 @@
 /*
  * u04_07_aus.s
  *
- * assemble and link with:
- * as -g -o led_d2_d7_d13_aus.o u04_05.s
+ * assemble and link with (might require assembling lib_gpio.s first):
+ * as -g -o led_d2_d7_d13_aus.o u04_07_aus.s
  * ld -o led_d2_d7_d13_aus.elf led_d2_d7_d13_aus.o ../lib/lib_gpio.o -T ../lib/stm32f1.ld
  *
  * start with:
@@ -19,44 +19,37 @@
 
 .global _start
 _start:
-	mov	r0, #0	@ Port A
+	mov	r0, #0	@ port A
+
 	bl	port_open
 
-	mov	r0, #0	@ Port A
-	mov	r1, #6	@ Pin 6
-	mov	r2, #1	@ Output
+
+	/* D13 */
+	mov	r1, #5	@ pin 5
+
+	mov	r2, #1	@ output
 	bl	gpio_init
 
-	mov	r0, #0	@ Port A
-	mov	r1, #6	@ Pin 6
 	mov	r2, #0	@ reset
 	bl	gpio_set
 
 
-	mov	r0, #0	@ Port A
-	bl	port_open
+	/* D7 */
+	mov	r1, #8	@ pin 8
 
-	mov	r0, #0	@ Port A
-	mov	r1, #8	@ Pin 8
-	mov	r2, #1	@ Output
+	mov	r2, #1	@ output
 	bl	gpio_init
 
-	mov	r0, #0	@ Port A
-	mov	r1, #8	@ Pin 8
 	mov	r2, #0	@ reset
 	bl	gpio_set
 
 
-	mov	r0, #0	@ Port A
-	bl	port_open
+	/* D2 */
+	mov	r1, #10	@ pin 10
 
-	mov	r0, #0	@ Port A
-	mov	r1, #10	@ Pin 10
-	mov	r2, #1	@ Output
+	mov	r2, #1	@ output
 	bl	gpio_init
 
-	mov	r0, #0	@ Port A
-	mov	r1, #10	@ Pin 10
 	mov	r2, #0	@ reset
 	bl	gpio_set
 

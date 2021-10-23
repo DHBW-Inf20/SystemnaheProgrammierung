@@ -1,7 +1,7 @@
 /*
  * u04_05.s
  *
- * assemble and link with:
+ * assemble and link with (might require assembling lib_gpio.s first):
  * as -g -o u04_05.o u04_05.s
  * ld -o u04_05.elf u04_05.o ../lib/lib_gpio.o -T ../lib/stm32f1.ld
  *
@@ -19,16 +19,15 @@
 
 .global _start
 _start:
-	mov	r0, #0	@ Port A
+	/* D7 */
+	mov	r0, #0	@ port A
+	mov	r1, #8	@ pin 8
+
 	bl	port_open
 
-	mov	r0, #0	@ Port A
-	mov	r1, #8	@ Pin 8
-	mov	r2, #1	@ Output
+	mov	r2, #1	@ output
 	bl	gpio_init
 
-	mov	r0, #0	@ Port A
-	mov	r1, #8	@ Pin 8
 	mov	r2, #1	@ set
 	bl	gpio_set
 

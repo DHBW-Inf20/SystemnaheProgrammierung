@@ -22,39 +22,40 @@ _start:
 	/*
 	 * configure APB2 peripheral clock enable register (RCC_APB2ENR)
 	 *
-	 * base RCC address: 0x40021000
+	 * base reset and clock control RCC address: 0x40021000
 	 * RCC_APB2ENR offset: 0x18
 	 * -> 0x40021018
 	 */
-	ldr	r1, =0x40021018		@ load address
-	ldr	r0, [r1]
-	orr	r0, r0, #0b100		@ bit 2: enable GPIO Port A (IOPAEN)
-	str	r0, [r1]		@ -> GPIOA enabled
+	ldr	r1, =0x40021018		@ RCC_APB2ENR address
+	ldr	r0, [r1]		@ load previous register value
+	orr	r0, #0b100		@ enable GPIO port A (IOPAEN)
+	str	r0, [r1]		@ store new register value
 
 	/*
-	 * configure Port configuration register high (GPIOx_CRH)
+	 * configure port configuration register high (GPIOx_CRH)
 	 *
-	 * base GPIO Port A address: 0x40010800
+	 * base GPIO port A address: 0x40010800
 	 * GPIOx_CRH offset: 0x04
 	 * -> 0x40010804
 	 */
-	ldr	r1, =0x40010804		@ load address
-	ldr	r0, [r1]
+	ldr	r1, =0x40010804		@ GPIOx_CRH address
+	ldr	r0, [r1]		@ load previous register value
 	and	r0, #0xfffffff0		@ reset CNF8 and MODE8
-	orr	r0, #0b0001		@ set CNF8 to 00 and MODE8 to 01
-	str	r0, [r1]		@ -> Pin 8 push-pull general purpose output, max speed 10 MHz
+	orr	r0, #0b0011		@ set CNF8 to 00 and MODE8 to 11
+	str	r0, [r1]		@ -> pin 8 general purpose output push-pull, max speed 50 MHz
 
 	/*
-	 * change Port bit set/reset register (GPIOx_BSRR)
+	 * update pin output value using port bit set/reset register
+	 * (GPIOx_BSRR)
 	 *
-	 * base GPIO Port A address: 0x40010800
+	 * base GPIO port A address: 0x40010800
 	 * GPIOx_BSRR offset: 0x10
 	 * -> 0x40010810
 	 */
-	ldr	r1, =0x40010810		@ load address
-	mov	r2, #1
-	mov	r0, r2, lsl #8		@ set bit 8 (BS8) to 1
-	str	r0, [r1]		@ -> Pin 8 set
+	ldr	r1, =0x40010810		@ GPIOx_BSRR address
+	mov	r0, #1
+	lsl	r0, #8
+	str	r0, [r1]		@ write 1 to BS8 -> pin 8 set
 
 loop:
 	b	loop
