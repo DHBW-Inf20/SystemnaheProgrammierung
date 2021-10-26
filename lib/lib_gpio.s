@@ -83,7 +83,7 @@ gpio_init:
 	pop	{lr}
 
 	/* begin function */
-	push	{r0-r5}
+	push	{r0-r4}
 
 	/*
 	 * configure port configuration register low/high
@@ -122,14 +122,11 @@ gpio_init:
 
 	/*
 	 * reset previous CNF and MODE for pin by using a bitmask with
-	 * 4 unset bits rotated into position using ror with adjusted
-	 * shift distance to simulate left rotation
-	 * left shift distance is r1
+	 * 4 unset bits (shifted to configuration position of the pin)
 	 */
-	mvn	r0, #0b1111		@ all bits set except last 4
-	mov	r5, #32
-	sub	r5, r1			@ 32 - bits to rotate left
-	ror	r0, r5			@ -> left rotation with ror
+	mov	r0, #0b1111		@ only last 4 bits set
+	lsl	r0, r1			@ shift mask into position
+	mvn	r0, r0			@ negate mask -> 4 bits unset
 	and	r4, r0			@ reset CNF and MODE for pin
 
 	/*
@@ -150,7 +147,7 @@ gpio_init:
 	str	r4, [r3]
 
 	/* end function and return */
-	pop	{r0-r5}
+	pop	{r0-r4}
 	bx	lr
 
 
