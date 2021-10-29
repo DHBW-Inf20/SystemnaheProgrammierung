@@ -44,7 +44,7 @@ wait_ca_1ms:
 	push	{r0,r1,lr}
 
 outer_ms_loop:
-	mov	r1, #1000
+	mov	r1, #1135
 
 inner_ms_loop:
 	bl	wait_ca_1us
