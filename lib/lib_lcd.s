@@ -36,7 +36,7 @@
 /*                function lcd_cursor_line_2_position_0: moves cursor    */
 /*                function lcd_reset: clears display                     */
 /* depends on:    lib_gpio.s                                             */
-/*                lib_times.s                                            */
+/*                lib_timer.s                                            */
 /*************************************************************************/
 
 .type EnableLCDClockGPIOB, %function
