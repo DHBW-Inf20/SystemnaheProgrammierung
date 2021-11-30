@@ -256,7 +256,7 @@ lcd_write:
 
 
 
-.global lcd_command	
+.global lcd_command
 lcd_command:
 	/*********************************************/
 	/* function:    lcd_command                  */

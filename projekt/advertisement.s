@@ -44,15 +44,8 @@ display_text_loop:
 
 	/* line break (before 16th char) */
 	cmp	r2, #16
-	bne	skip_line_break
-
-	/* move cursor to second line position 0 */
-	bl	lcd_command
-	mov	r0, #0b11000000
-	bl	lcd_send_4bit_8
-	bl	lcd_write
-
-	skip_line_break:
+	it	eq
+	bleq	lcd_cursor_line_2_position_0
 
 	/*
 	 * copy second line to first line and clear second line
@@ -77,7 +70,7 @@ display_text_loop:
 	mov	r0, #80
 	bl	delay_ms
 
-	/* increment offset / loop counter and jump back */
+	/* increment offset and jump back */
 	add	r2, #1
 	b	display_text_loop
 
